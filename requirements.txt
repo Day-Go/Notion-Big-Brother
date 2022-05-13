@@ -1,0 +1,6 @@
+keyboard==0.13.5
+matplotlib==3.5.2
+notion==0.0.28
+notion_client==1.0.0
+pywin32==304
+win32gui==221.6
