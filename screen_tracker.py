@@ -60,6 +60,10 @@ class ScreenTimeTracker():
             idle_thread = Thread(target=self.check_if_idle)
             idle_thread.daemon = True
             idle_thread.start()
+
+            upload_thread = Thread(target=self.upload_figure)
+            upload_thread.daemon = True
+            upload_thread.start()
         
         while not self.stopped and not self.paused:
             self.get_active_process_name()
@@ -84,6 +88,10 @@ class ScreenTimeTracker():
         main_thread = Thread(target=self.main_loop)
         main_thread.daemon = True
         main_thread.start()
+
+        upload_thread = Thread(target=self.upload_figure)
+        upload_thread.daemon = True
+        upload_thread.start()
 
         self.check_if_idle()
         
@@ -194,7 +202,7 @@ class ScreenTimeTracker():
 
     def upload_figure(self):
         minimum_use = 3
-        while not self.stopped:
+        while not self.stopped and not self.paused:
             time.sleep(15)
 
             self.detail_block.title = self.screentime_string

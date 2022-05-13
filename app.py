@@ -313,10 +313,6 @@ class App(tk.Tk):
         if self.running:
             self.screentime_tracker.stopped = False
 
-            t3 = Thread(target=self.screentime_tracker.upload_figure)
-            t3.daemon = True
-            t3.start()
-
             self.console_writer.write("Entering screentime tracker main loop.")
             self.screentime_tracker.main_loop(self, "screentime_stats")
         else:
