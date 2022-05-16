@@ -1,8 +1,5 @@
 import json
-from lib2to3.pygram import pattern_symbols
 import time
-from tkinter import END
-from turtle import distance
 import keyboard
 from threading import Timer
 from notion.block import TextBlock, DividerBlock, HeaderBlock
@@ -131,6 +128,25 @@ class KeyLogger():
         # put together string with most recent keypress inserted
         self.line = lhs + key + rhs
         self.log.update({self.y: self.line})
+
+    def calculate_jump_size(self, direction: str):
+        jump_size = 0
+        if direction == "left":
+            half, _ = self.split_string_at_caret(0)
+            idx = -1
+        else:
+            _, half = self.split_string_at_caret(0)
+            idx = 0
+
+        words = half.split(" ")
+
+        if words[idx] == "":
+            jump_size += 1
+            words = list(filter(None, words))
+
+        jump_size += len(words[-1])
+
+        return jump_size
 
     def execute_key_behaviour(self, name):
         # TO-DO: Add shortcuts to caret behaviour (i.e. ctrl + left)
@@ -262,28 +278,15 @@ class KeyLogger():
             self.x = len(self.log[self.y])-1
 
             if self.ctrl:
-                jump_size = 1
-                lhs, _ = self.split_string_at_caret(0)
-                words = lhs.split(" ")
-
-                jump_size += len(words[-1])
-                self.x = len(self.log[self.y])-jump_size
+                jump_size = len(self.line.split(" ")[-1])
+                self.x = len(self.log[self.y])-(jump_size+1)
             else:
                 self.x = len(self.log[self.y])-1            # position caret at end of the line
-
+        
         else:
             if self.ctrl:
-                jump_size = 0
-                lhs, _ = self.split_string_at_caret(0)
-                words = lhs.split(" ")
-
-                if words[-1] == "":
-                    jump_size += 1
-                    words = list(filter(None, words))
-
-                jump_size += len(words[-1])
+                jump_size = self.calculate_jump_size("left")
                 self.x = max(0, self.x - jump_size)
-
             else:
                 self.x = max(0, self.x - 1)
 
@@ -296,28 +299,15 @@ class KeyLogger():
             self.x = 0
 
             if self.ctrl:
-                jump_size = 0
-                _, rhs = self.split_string_at_caret(0)
-                words = rhs.split(" ")
-
-                jump_size += len(words[0])
+                jump_size = len(self.line.split(" ")[0])
                 self.x += jump_size
             else:
                 self.x = len(self.log[self.y])-1            # position caret at end of the line
-
+        
         else:
             if self.ctrl:
-                jump_size = 0
-                _, rhs = self.split_string_at_caret(0)
-                words = rhs.split(" ")
-
-                if words[0] == "":
-                    jump_size += 1
-                    words = list(filter(None, words))
-
-                jump_size += len(words[0])
+                jump_size = self.calculate_jump_size("right")
                 self.x = min(self.w[self.y], self.x + jump_size)
-
             else:
                 # caret cannot move beyond where characters already exist
                 self.x = min(self.w[self.y], self.x + 1)
