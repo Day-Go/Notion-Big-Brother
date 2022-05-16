@@ -1,16 +1,17 @@
 import json
+from lib2to3.pygram import pattern_symbols
 import time
+from tkinter import END
+from turtle import distance
 import keyboard
-from threading import Timer, Thread
+from threading import Timer
 from notion.block import TextBlock, DividerBlock, HeaderBlock
 from utils import get_date_and_time
 
 # TO DO: ADD CTRL MOVEMENT KEYS
 
-class KeyLogger(Thread):
+class KeyLogger():
     def __init__(self, gui, attr_list, database_entry, interval=60) -> None:
-        super().__init__()
-
         self.database_entry = database_entry
 
         attr_dict = {}
@@ -85,6 +86,7 @@ class KeyLogger(Thread):
         # gui_string = gui_string.replace("{","").replace("}","").replace("\"","").replace("\n"," ")
 
         self.gui_attr.set(gui_string)
+
 
     def search_for_header_block(self):
         self.header_block = None
@@ -250,16 +252,40 @@ class KeyLogger(Thread):
         self.x = min(self.x, self.w[self.y])
 
     def left(self):
+        
         # if caret is at the start of the line AND not on row 0
         if self.x == 0 and self.y != 0:
             self.log[self.y] += "\n"
             self.y -= 1
             self.line = self.log[self.y].strip("\n")    # load previous line
-            self.x = len(self.log[self.y])-1            # position caret at end of the line
+
+            self.x = len(self.log[self.y])-1
+
+            if self.ctrl:
+                jump_size = 1
+                lhs, _ = self.split_string_at_caret(0)
+                words = lhs.split(" ")
+
+                jump_size += len(words[-1])
+                self.x = len(self.log[self.y])-jump_size
+            else:
+                self.x = len(self.log[self.y])-1            # position caret at end of the line
 
         else:
-            # caret cannot move to negative values
-            self.x = max(0, self.x - 1)
+            if self.ctrl:
+                jump_size = 0
+                lhs, _ = self.split_string_at_caret(0)
+                words = lhs.split(" ")
+
+                if words[-1] == "":
+                    jump_size += 1
+                    words = list(filter(None, words))
+
+                jump_size += len(words[-1])
+                self.x = max(0, self.x - jump_size)
+
+            else:
+                self.x = max(0, self.x - 1)
 
     def right(self):
         # if caret is at the end of the line AND not the final row
@@ -268,9 +294,33 @@ class KeyLogger(Thread):
             self.y += 1
             self.line = self.log[self.y].strip("\n")    # load next line
             self.x = 0
+
+            if self.ctrl:
+                jump_size = 0
+                _, rhs = self.split_string_at_caret(0)
+                words = rhs.split(" ")
+
+                jump_size += len(words[0])
+                self.x += jump_size
+            else:
+                self.x = len(self.log[self.y])-1            # position caret at end of the line
+
         else:
-            # caret cannot move beyond where characters already exist
-            self.x = min(self.w[self.y], self.x + 1)
+            if self.ctrl:
+                jump_size = 0
+                _, rhs = self.split_string_at_caret(0)
+                words = rhs.split(" ")
+
+                if words[0] == "":
+                    jump_size += 1
+                    words = list(filter(None, words))
+
+                jump_size += len(words[0])
+                self.x = min(self.w[self.y], self.x + jump_size)
+
+            else:
+                # caret cannot move beyond where characters already exist
+                self.x = min(self.w[self.y], self.x + 1)
     
     def reset(self):
         # initialise new timer object that calls function after interval (seconds)
@@ -297,23 +347,19 @@ class KeyLogger(Thread):
                 line += "\n" 
             self.line_buffer += line
 
-        # reset caret position and text field size
         self.x, self.y = 0, 0
         self.w, self.h = {0:0}, 0
 
-        # clear log and line string
         self.log = {}
         self.line = ""
         
         self.console_writer.write("Uploading key buffer to notion.")
 
-        # if there is something in log, report it
         if len(self.line_buffer) > 5:
             self.database_entry.children.add_new(DividerBlock)
             self.database_entry.children.add_new(TextBlock, title=self.time)
             self.database_entry.children.add_new(TextBlock, title=self.line_buffer)
 
-        # clear buffer after use
         self.line_buffer = ""
 
         self.reset()
