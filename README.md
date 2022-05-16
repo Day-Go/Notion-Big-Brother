@@ -31,7 +31,7 @@ Big brother was developed and tested with Python 3.10.4
 
 ## Things to add
 - [ ] Save data locally
-- [ ] Add ctrl + direction caret shortcuts
+- [x] Add ctrl + direction caret shortcuts
 - [ ] ignore empty fields when configuring workspace in GUI
 - [ ] Add GUI elements for controlling app params -> time before idle, minimal app usage for plotting, upload interval.
 - [ ] Get tab title from browsers
