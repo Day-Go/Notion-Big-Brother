@@ -33,6 +33,8 @@ class ScreenTimeTracker():
         self.process = None
         self.screentime_stats_secs = {}
         self.screentime_stats_mins = {}
+        self.detailed_stats_secs = {}
+        self.detailed_stats_mins = {}
 
         self.idle_time = 0
         self.ox, self.oy = 0, 0
@@ -53,6 +55,7 @@ class ScreenTimeTracker():
         if self.img_block is None:
             self.create_image_block()
 
+        
 
     def main_loop(self, gui=None, attr_name=None):
         if gui is not None:
@@ -68,6 +71,7 @@ class ScreenTimeTracker():
         while not self.stopped and not self.paused:
             self.get_active_process_name()
             self.update_screentime_stats()
+            self.update_detailed_stats()
             self.sort_screentime_stats()
             self.screentime_string = format_screentime_string(self.screentime_stats_secs)
 
@@ -110,7 +114,7 @@ class ScreenTimeTracker():
             else:
                 self.idle_time = 0
                 
-            if self.idle_time >= 15 and not self.paused:
+            if self.idle_time >= 180 and not self.paused:
                 self.pause()
             
             self.ox, self.oy = x, y
@@ -177,10 +181,55 @@ class ScreenTimeTracker():
 
             self.screentime_stats_secs = dict(zip(apps, screentimes))
 
+    def get_active_tab_name(self, handle):
+        title = win32gui.GetWindowText(handle)
+
+        print(title)
+        if "Twitter" in title:
+            title = "Twitter"
+        elif "Facebook" in title:
+            title = "Facebook"
+        elif "Reddit" in title:
+            title = "Reddit"
+        elif "CoinGecko" in title:
+            title = "CoinGecko"
+        elif "Notion" in self.process:
+            pass
+        else:
+            title = re.split('[-—]',title)[:-1][::-1]
+            title = title[0]
+                
+        self.tab_title = title.strip(" ")
+        # if "Twitter" in title:
+        #     title = title.split(":")[0]
+        #     title = title.split('/')[0]
+        # elif "Facebook" in title:
+        #     title = title.split("|")[0]
+        # elif "Notion" in self.process:
+        #     pass
+        # else:
+        #     title = re.split('[-—]',title)[:-1][::-1]
+       
+    #    self.title = title
+        print(title)
+
+    def update_detailed_stats(self):
+        if self.process in self.detailed_stats_secs.keys():
+            app = self.detailed_stats_secs[self.process]
+            if self.tab_title in app.keys():
+                self.detailed_stats_secs[self.process].update({self.tab_title: self.detailed_stats_secs[self.process][self.tab_title] + 1})
+                # self.detailed_stasts_secs.update({self.process: {self.tab_title: self.detailed_stats_secs[self.process][self.tab_title] + 1}})
+            else:
+                self.detailed_stats_secs[self.process].update({self.tab_title: 1})   
+        else:
+            self.detailed_stats_secs.update({self.process: {}})   
+
+        print(self.detailed_stats_secs)
+
     def get_active_process_name(self):
         # getting occasional errors where the process handle is released between function
         # calls. doesnt happen ofter and has minimal effect on the code so i will handle
-        # the error with zero fucks
+        # the error with zero fucks (for now)
         try:
             window_handle = win32gui.GetForegroundWindow()
             pid = win32process.GetWindowThreadProcessId(window_handle)
@@ -188,6 +237,8 @@ class ScreenTimeTracker():
             process_path  = win32process.GetModuleFileNameEx(process_handle, 0)
 
             self.process = process_path.split('\\')[-1].split('.')[0].capitalize()
+
+            self.get_active_tab_name(window_handle)
         except:
             pass
 
