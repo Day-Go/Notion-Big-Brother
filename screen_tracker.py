@@ -200,17 +200,7 @@ class ScreenTimeTracker():
             title = title[0]
                 
         self.tab_title = title.strip(" ")
-        # if "Twitter" in title:
-        #     title = title.split(":")[0]
-        #     title = title.split('/')[0]
-        # elif "Facebook" in title:
-        #     title = title.split("|")[0]
-        # elif "Notion" in self.process:
-        #     pass
-        # else:
-        #     title = re.split('[-—]',title)[:-1][::-1]
-       
-    #    self.title = title
+
         print(title)
 
     def update_detailed_stats(self):
@@ -218,7 +208,7 @@ class ScreenTimeTracker():
             app = self.detailed_stats_secs[self.process]
             if self.tab_title in app.keys():
                 self.detailed_stats_secs[self.process].update({self.tab_title: self.detailed_stats_secs[self.process][self.tab_title] + 1})
-                # self.detailed_stasts_secs.update({self.process: {self.tab_title: self.detailed_stats_secs[self.process][self.tab_title] + 1}})
+
             else:
                 self.detailed_stats_secs[self.process].update({self.tab_title: 1})   
         else:
@@ -263,20 +253,27 @@ class ScreenTimeTracker():
             
             self.console_writer.write("Uploading screentime chart to notion.")
 
-            # configure output figure style
-            plt.style.use('dark_background')
-            plt.grid(True)
+            self.create_and_save_figure(self.screentime_stats_mins)
 
-            plt.barh(range(len(self.screentime_stats_mins)), list(self.screentime_stats_mins.values()), align='center')
-            plt.yticks(range(len(self.screentime_stats_mins)), list(self.screentime_stats_mins.keys()))
-            plt.title(f"Screen time - {self.date}")
-            plt.ylabel("App name", fontsize=14)
-            plt.xlabel("Time (m)", fontsize=14)
-            plt.savefig(self.path, bbox_inches = 'tight')
-            plt.close()
+            for app in self.detailed_stats_secs.values():
+                print(app)
+                self.create_and_save_figure(app)
 
             # upload image to notion
             self.img_block.upload_file(self.path)
+
+    def create_and_save_figure(self, stats):
+        # configure output figure style
+        plt.style.use('dark_background')
+        plt.grid(True)
+
+        plt.barh(range(len(stats)), list(stats.values()), align='center')
+        plt.yticks(range(len(stats)), list(stats.keys()))
+        plt.title(f"Screen time - {self.date}")
+        plt.ylabel("App name", fontsize=14)
+        plt.xlabel("Time (m)", fontsize=14)
+        plt.savefig(self.path, bbox_inches = 'tight')
+        plt.close()
 
     def convert_to_minutes(self):
         self.screentime_stats_mins = {k: v / 60 for k, v in self.screentime_stats_secs.items()}
